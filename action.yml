@@ -1,0 +1,38 @@
+name: "PR Quiz Checker"
+description: "Bloquea el merge del PR hasta que al menos un desarrollador complete exitosamente un cuestionario de comprensión del código"
+author: "Your Team"
+
+branding:
+  icon: "check-circle"
+  color: "green"
+
+inputs:
+  github-token:
+    description: "GitHub token para interactuar con el PR"
+    required: true
+    default: ${{ github.token }}
+
+  mock-backend-url:
+    description: "URL del backend mock (para testing)"
+    required: false
+    default: "http://localhost:3000"
+
+  polling-interval:
+    description: "Intervalo de polling en segundos para verificar el estado del quiz"
+    required: false
+    default: "10"
+
+  max-polling-attempts:
+    description: "Máximo número de intentos de polling antes de fallar"
+    required: false
+    default: "30"
+
+outputs:
+  quiz-url:
+    description: "URL del cuestionario generado"
+  quiz-status:
+    description: "Estado final del cuestionario (PASSED, FAILED, PENDING)"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"

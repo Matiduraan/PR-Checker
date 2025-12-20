@@ -1,0 +1,52 @@
+# Ejemplo de Workflow para usar PR Quiz Checker
+
+name: PR Quiz Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quiz-check:
+    runs-on: ubuntu-latest
+    name: Verificar Comprensión del PR
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      # Opcional: Iniciar backend mock en el mismo job
+      # En producción, tendrías un backend real deployado
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias del backend mock
+        run: |
+          cd mock-backend
+          npm install
+
+      - name: Iniciar backend mock en background
+        run: |
+          cd mock-backend
+          # Auto-aprobar después de 45 segundos para testing
+          MOCK_AUTO_PASS_SECONDS=45 node server.js &
+          sleep 3  # Esperar a que el servidor inicie
+
+      # Ejecutar la action
+      - name: PR Quiz Checker
+        uses: ./
+        id: quiz-check
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          mock-backend-url: "http://localhost:3000"
+          polling-interval: "10"
+          max-polling-attempts: "30"
+
+      # Opcional: Usar outputs
+      - name: Mostrar resultado
+        if: always()
+        run: |
+          echo "Quiz URL: ${{ steps.quiz-check.outputs.quiz-url }}"
+          echo "Estado final: ${{ steps.quiz-check.outputs.quiz-status }}"

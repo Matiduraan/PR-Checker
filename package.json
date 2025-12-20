@@ -1,0 +1,30 @@
+{
+  "name": "pr-quiz-checker-action",
+  "version": "1.0.0",
+  "description": "GitHub Action que bloquea PRs hasta que se complete un cuestionario de comprensión",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build src/index.ts -o dist",
+    "test": "echo \"No tests yet\"",
+    "mock-backend": "node mock-backend/server.js"
+  },
+  "keywords": [
+    "github-actions",
+    "pull-request",
+    "code-review"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/node-fetch": "^2.6.9",
+    "@vercel/ncc": "^0.38.1",
+    "express": "^4.18.2",
+    "typescript": "^5.3.3"
+  }
+}
