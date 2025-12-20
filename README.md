@@ -17,6 +17,18 @@ GitHub Action que bloquea el merge de un Pull Request hasta que al menos un desa
 - GitHub Actions environment
 - Backend que implemente los endpoints requeridos (o usar el mock incluido)
 
+## ⚠️ Importante para Desarrolladores
+
+Si modificas el código fuente, **debes compilar y commitear** el directorio `dist/`:
+
+```bash
+npm run build
+git add dist/
+git commit -m "chore: update compiled code"
+```
+
+Ver [RELEASE.md](RELEASE.md) para más detalles sobre el proceso de release.
+
 ## 🚀 Uso
 
 ### 1. Estructura del repositorio

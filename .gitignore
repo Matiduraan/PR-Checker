@@ -1,6 +1,6 @@
 # Archivos de build
 node_modules/
-dist/
+# dist/ - Comentado: necesario para GitHub Actions
 lib/
 *.tsbuildinfo
 
