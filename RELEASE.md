@@ -46,6 +46,7 @@ git push origin v1 --force
 ### 5. Crear GitHub Release (opcional)
 
 Ve a GitHub → Releases → New Release:
+
 - Tag: `v1.0.0`
 - Title: `v1.0.0`
 - Description: Changelog de cambios
@@ -97,6 +98,7 @@ Esto permite a los usuarios:
 **Causa:** El directorio `dist/` está en `.gitignore` o no fue commiteado.
 
 **Solución:**
+
 ```bash
 # Verificar que dist/ NO esté en .gitignore
 # Compilar
@@ -113,6 +115,7 @@ git push
 **Causa:** Dependencies no fueron empaquetadas correctamente.
 
 **Solución:**
+
 ```bash
 # Limpiar y recompilar
 rm -rf dist/ lib/ node_modules/
@@ -130,7 +133,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:

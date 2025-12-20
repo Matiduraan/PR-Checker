@@ -49,10 +49,10 @@ Una vez pusheado, actualiza tu workflow para usar la nueva versión:
 ```yaml
 steps:
   - name: PR Quiz Checker
-    uses: Matiduraan/PR-Checker@v0.0.2  # o @v0 para auto-updates
+    uses: Matiduraan/PR-Checker@v0.0.2 # o @v0 para auto-updates
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
-      mock-backend-url: 'http://localhost:3000'
+      mock-backend-url: "http://localhost:3000"
 ```
 
 ## 📝 Para futuros cambios

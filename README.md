@@ -9,13 +9,14 @@ GitHub Action que bloquea el merge de un Pull Request hasta que al menos un desa
 - 📊 Obtiene automáticamente metadata del PR (archivos, commits, etc.)
 - 💬 Comenta automáticamente en el PR con el link al quiz
 - ⏱️ Polling automático del estado del cuestionario
-- 🎭 Incluye backend mock completo para testing
+- 🎭 **Sin backend necesario** - Todo funciona con respuestas mock integradas
+- ⚙️ Configurable: auto-aprobar, mantener pendiente, aprobar/rechazar instantáneo
 
 ## 📋 Requisitos
 
 - Node.js 20+
 - GitHub Actions environment
-- Backend que implemente los endpoints requeridos (o usar el mock incluido)
+- **No requiere backend externo** - Funciona completamente standalone
 
 ## ⚠️ Importante para Desarrolladores
 
@@ -65,7 +66,8 @@ jobs:
         uses: ./ # O tu-org/pr-quiz-checker@v1 si está publicado
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          mock-backend-url: "http://localhost:3000"
+          mock-behavior: "AUTO_PASS" # PENDING, FAILED, PASSED, AUTO_PASS
+          auto-pass-seconds: "30" # Auto-aprobar después de 30 segundos
           polling-interval: "10"
           max-polling-attempts: "30"
 ```
@@ -74,12 +76,13 @@ jobs:
 
 #### Inputs
 
-| Input                  | Descripción                     | Requerido | Default                 |
-| ---------------------- | ------------------------------- | --------- | ----------------------- |
-| `github-token`         | Token de GitHub                 | Sí        | `${{ github.token }}`   |
-| `mock-backend-url`     | URL del backend                 | No        | `http://localhost:3000` |
-| `polling-interval`     | Intervalo de polling (segundos) | No        | `10`                    |
-| `max-polling-attempts` | Máximo de intentos de polling   | No        | `30`                    |
+| Input                  | Descripción                                                         | Requerido | Default               |
+| ---------------------- | ------------------------------------------------------------------- | --------- | --------------------- |
+| `github-token`         | Token de GitHub                                                     | Sí        | `${{ github.token }}` |
+| `mock-behavior`        | Comportamiento del quiz: `PENDING`, `FAILED`, `PASSED`, `AUTO_PASS` | No        | `AUTO_PASS`           |
+| `auto-pass-seconds`    | Segundos antes de auto-aprobar (solo con `AUTO_PASS`)               | No        | `30`                  |
+| `polling-interval`     | Intervalo de polling (segundos)                                     | No        | `10`                  |
+| `max-polling-attempts` | Máximo de intentos de polling                                       | No        | `30`                  |
 
 #### Outputs
 
@@ -104,28 +107,47 @@ npm run build
 
 Esto compila TypeScript y empaqueta todo en `dist/index.js` usando `@vercel/ncc`.
 
-### Testing local
+### Comportamientos Mock Disponibles
 
-1. **Iniciar backend mock:**
+La action funciona completamente sin backend. Puedes configurar diferentes comportamientos:
 
-```bash
-npm run mock-backend
+#### `AUTO_PASS` (default)
+
+Auto-aprueba el quiz después de N segundos (configurable con `auto-pass-seconds`):
+
+```yaml
+with:
+  mock-behavior: "AUTO_PASS"
+  auto-pass-seconds: "30" # Aprueba después de 30 segundos
 ```
 
-2. **Configurar diferentes escenarios:**
+#### `PASSED`
 
-```bash
-# Auto-aprobar después de 30 segundos
-MOCK_AUTO_PASS_SECONDS=30 npm run mock-backend
+Aprueba inmediatamente (útil para testing):
 
-# Quiz aprobado por defecto
-MOCK_DEFAULT_STATUS=PASSED npm run mock-backend
-
-# Simular intentos fallidos
-MOCK_FAILED_ATTEMPTS=2 MOCK_AUTO_PASS_SECONDS=60 npm run mock-backend
+```yaml
+with:
+  mock-behavior: "PASSED"
 ```
 
-3. **Probar la action** (requiere contexto de PR real o mock)
+#### `FAILED`
+
+Rechaza inmediatamente:
+
+```yaml
+with:
+  mock-behavior: "FAILED"
+```
+
+#### `PENDING`
+
+Permanece pendiente indefinidamente (fallará por timeout):
+
+```yaml
+with:
+  mock-behavior: "PENDING"
+  max-polling-attempts: "10" # Fallará después de 10 intentos
+```
 
 ### Estructura del proyecto
 
@@ -135,12 +157,9 @@ action/
 │   ├── index.ts              # Entry point
 │   ├── main.ts               # Lógica principal
 │   ├── pr-metadata.ts        # Extracción de metadata del PR
-│   ├── backend-client.ts     # Cliente HTTP para backend
+│   ├── backend-client.ts     # Cliente mock (sin backend real)
 │   ├── comment-handler.ts    # Publicar comentarios en PR
 │   └── quiz-poller.ts        # Polling del estado del quiz
-├── mock-backend/
-│   ├── server.js             # Servidor Express mock
-│   └── README.md             # Documentación del backend
 ├── dist/                     # Código compilado (generado)
 ├── action.yml                # Metadata de la action
 ├── package.json
@@ -148,9 +167,20 @@ action/
 └── README.md
 ```
 
-## 🔌 Integración con Backend Real
+## 🔌 Migración a Backend Real (Futuro)
 
-Para usar un backend real en producción, implementa estos endpoints:
+Actualmente la action funciona completamente sin backend usando respuestas mock.
+
+Para integrar con un backend real que genere preguntas con IA:
+
+1. **Modificar `src/backend-client.ts`** para hacer llamadas HTTP reales
+2. **Implementar endpoints** en tu backend:
+   - `POST /generate-quiz` - Recibe metadata del PR, genera preguntas
+   - `GET /quiz-status/:id` - Retorna estado actual del quiz
+3. **Implementar frontend** para mostrar el cuestionario en la URL generada
+4. **Actualizar inputs** del `action.yml` para aceptar URL de backend real
+
+Ver `mock-backend/` para un ejemplo de referencia de cómo debería ser la estructura de respuestas.
 
 ### `POST /generate-quiz`
 
@@ -180,59 +210,28 @@ Para usar un backend real en producción, implementa estos endpoints:
 }
 ```
 
-**Response:**
-
-```json
-{
-  "quizId": "string",
-  "quizUrl": "string"
-}
-```
-
-### `GET /quiz-status/:quizId`
-
-**Response:**
-
-```json
-{
-  "status": "PENDING" | "FAILED" | "PASSED",
-  "attempts": number,
-  "lastAttemptAt": "ISO 8601 string" (opcional)
-}
-```
-
-## 🎭 Backend Mock
-
-El backend mock incluido soporta:
-
-- ✅ Generación de quizzes con IDs únicos
-- ✅ Consulta de estado
-- ✅ Auto-aprobación configurable
-- ✅ Actualización manual de estado (testing)
-- ✅ Listado de todos los quizzes
-- ✅ Health check
-
-Ver `mock-backend/README.md` para más detalles.
+Ver `mock-backend/` para un ejemplo de referencia de cómo debería ser la estructura de respuestas.
 
 ## 🔒 Seguridad
 
 - El `github-token` debe tener permisos de escritura en PRs
-- El backend debe validar la procedencia de las requests
 - No almacenar secretos en el código
-- Usar HTTPS en producción
+- Si migras a backend real, usar HTTPS y validar origen de requests
 
 ## 📝 Flujo Completo
 
 1. Se abre/actualiza un Pull Request
 2. La action se ejecuta automáticamente
 3. Obtiene metadata del PR (archivos, commits, etc.)
-4. Envía metadata al backend
-5. Backend genera un cuestionario y devuelve URL
-6. Action publica comentario en el PR con el link
-7. Action hace polling del estado cada X segundos
-8. Si el quiz se aprueba → Action pasa ✅
-9. Si no se aprueba en el tiempo límite → Action falla ❌
-10. El PR permanece bloqueado hasta que la action pase
+4. **Genera quiz mock localmente** (sin backend externo)
+5. Publica comentario en el PR con el link al cuestionario
+6. Hace polling del estado cada X segundos
+7. Según configuración:
+   - **AUTO_PASS**: Aprueba después de N segundos → Action pasa ✅
+   - **PASSED**: Aprueba inmediatamente → Action pasa ✅
+   - **FAILED**: Rechaza inmediatamente → Action falla ❌
+   - **PENDING**: Permanece pendiente → Action falla por timeout ❌
+8. El PR permanece bloqueado hasta que la action pase
 
 ## 🤝 Contribuir
 
@@ -258,15 +257,17 @@ on:
     types: [opened, synchronize, reopened]
 ```
 
-### El backend no responde
+### El quiz nunca se aprueba
 
-Verifica que:
+Si usas `mock-behavior: "PENDING"`, el quiz nunca se aprobará. Cambia a:
 
-- El backend esté corriendo
-- La URL sea correcta
-- No haya firewalls bloqueando la conexión
+```yaml
+with:
+  mock-behavior: "AUTO_PASS"
+  auto-pass-seconds: "30"
+```
 
-### El polling nunca termina
+### El polling termina muy rápido
 
 Aumenta `max-polling-attempts` o reduce `polling-interval`:
 

@@ -12,10 +12,15 @@ inputs:
     required: true
     default: ${{ github.token }}
 
-  mock-backend-url:
-    description: "URL del backend mock (para testing)"
+  mock-behavior:
+    description: "Comportamiento del quiz mock: PENDING, FAILED, PASSED, AUTO_PASS"
     required: false
-    default: "http://localhost:3000"
+    default: "AUTO_PASS"
+
+  auto-pass-seconds:
+    description: "Segundos antes de auto-aprobar el quiz (solo si mock-behavior es AUTO_PASS)"
+    required: false
+    default: "30"
 
   polling-interval:
     description: "Intervalo de polling en segundos para verificar el estado del quiz"

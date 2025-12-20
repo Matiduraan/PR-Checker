@@ -21,9 +21,11 @@ export async function run(): Promise<void> {
 
     // 2. Obtener inputs
     const githubToken = core.getInput("github-token", { required: true });
-    const backendUrl =
-      core.getInput("mock-backend-url", { required: false }) ||
-      "http://localhost:3000";
+    const mockBehavior = (core.getInput("mock-behavior", { required: false }) || "AUTO_PASS") as "PENDING" | "FAILED" | "PASSED" | "AUTO_PASS";
+    const autoPassSeconds = parseInt(
+      core.getInput("auto-pass-seconds", { required: false }) || "30",
+      10
+    );
     const pollingInterval = parseInt(
       core.getInput("polling-interval", { required: false }) || "10",
       10
@@ -34,7 +36,8 @@ export async function run(): Promise<void> {
     );
 
     core.info(`📊 Configuración:`);
-    core.info(`   Backend URL: ${backendUrl}`);
+    core.info(`   Mock behavior: ${mockBehavior}`);
+    core.info(`   Auto-pass after: ${autoPassSeconds}s`);
     core.info(`   Polling interval: ${pollingInterval}s`);
     core.info(`   Max polling attempts: ${maxPollingAttempts}`);
 
@@ -44,9 +47,9 @@ export async function run(): Promise<void> {
     core.info(`   PR #${prMetadata.prNumber}: ${prMetadata.title}`);
     core.info(`   Archivos modificados: ${prMetadata.filesChanged.length}`);
 
-    // 4. Enviar metadata al backend y obtener quiz
-    core.info("🎯 Generando cuestionario en el backend...");
-    const backendClient = new BackendClient(backendUrl);
+    // 4. Generar quiz mock (sin backend real)
+    core.info("🎯 Generando cuestionario mock...");
+    const backendClient = new BackendClient(mockBehavior, autoPassSeconds);
     const quizResponse = await backendClient.generateQuiz(prMetadata);
 
     core.info(`   Quiz ID: ${quizResponse.quizId}`);
