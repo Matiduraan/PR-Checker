@@ -21,10 +21,7 @@ jobs:
         id: quiz-check
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          mock-behavior: "AUTO_PASS" # AUTO_PASS, PENDING, FAILED, PASSED
-          auto-pass-seconds: "30" # Auto-aprobar después de 30 segundos
-          polling-interval: "10"
-          max-polling-attempts: "30"
+          mock-behavior: "PASSED" # PENDING, FAILED, PASSED
 
       # Opcional: Usar outputs
       - name: Mostrar resultado

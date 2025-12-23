@@ -1,99 +1,106 @@
-# PR Quiz Checker - GitHub Action
+# PR Trivia Checker
 
-GitHub Action que bloquea el merge de un Pull Request hasta que al menos un desarrollador complete correctamente un cuestionario de comprensión del código.
+GitHub Action para bloquear Pull Requests hasta que el autor complete una trivia externa, usada como mecanismo de validación (pagos, permisos, verificaciones, etc.).
 
 ## 🎯 Características
 
-- ✅ Bloquea el merge hasta completar el cuestionario
-- 🔄 Permite múltiples intentos (fallar y reintentar)
-- 📊 Obtiene automáticamente metadata del PR (archivos, commits, etc.)
-- 💬 Comenta automáticamente en el PR con el link al quiz
-- ⏱️ Polling automático del estado del cuestionario
-- 🎭 **Sin backend necesario** - Todo funciona con respuestas mock integradas
-- ⚙️ Configurable: auto-aprobar, mantener pendiente, aprobar/rechazar instantáneo
+- ✅ Bloquea PRs hasta completar validación externa
+- 🔐 Autenticación vía API Key
+- 💬 Comentarios automáticos con instrucciones
+- 🎭 **Backend completamente mockeado** (sin llamadas HTTP reales)
+- 🔧 Arquitectura extensible lista para migración a producción
+- 📝 Detección inteligente de comentarios duplicados
 
-## 📋 Requisitos
+## 🚀 Instalación
 
-- Node.js 20+
-- GitHub Actions environment
-- **No requiere backend externo** - Funciona completamente standalone
+### 1. Agregar la Action a tu repositorio
 
-## ⚠️ Importante para Desarrolladores
-
-Si modificas el código fuente, **debes compilar y commitear** el directorio `dist/`:
-
-```bash
-npm run build
-git add dist/
-git commit -m "chore: update compiled code"
-```
-
-Ver [RELEASE.md](RELEASE.md) para más detalles sobre el proceso de release.
-
-## 🚀 Uso
-
-### 1. Estructura del repositorio
-
-Coloca esta action en tu repositorio:
-
-```
-.github/
-  workflows/
-    pr-quiz-check.yml
-```
-
-### 2. Workflow de ejemplo
-
-Crea `.github/workflows/pr-quiz-check.yml`:
+Crea el archivo `.github/workflows/pr-check.yml`:
 
 ```yaml
-name: PR Quiz Check
+name: PR Trivia Check
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
 
 jobs:
-  quiz-check:
+  check-trivia:
     runs-on: ubuntu-latest
-    name: Verificar Comprensión del PR
+    name: Verificar Trivia de Validación
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: PR Quiz Checker
-        uses: ./ # O tu-org/pr-quiz-checker@v1 si está publicado
+      - name: Ejecutar PR Trivia Checker
+        uses: your-org/pr-trivia-checker@v1
         with:
+          api-key: ${{ secrets.TRIVIA_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          mock-behavior: "AUTO_PASS" # PENDING, FAILED, PASSED, AUTO_PASS
-          auto-pass-seconds: "30" # Auto-aprobar después de 30 segundos
-          polling-interval: "10"
-          max-polling-attempts: "30"
 ```
 
-### 3. Configuración
+### 2. Configurar la API Key
 
-#### Inputs
+1. Obtén tu API Key en `https://trivia-validator.example.com/dashboard`
+2. Ve a Settings → Secrets and variables → Actions
+3. Crea un nuevo secret llamado `TRIVIA_API_KEY`
+4. Pega tu API Key
 
-| Input                  | Descripción                                                         | Requerido | Default               |
-| ---------------------- | ------------------------------------------------------------------- | --------- | --------------------- |
-| `github-token`         | Token de GitHub                                                     | Sí        | `${{ github.token }}` |
-| `mock-behavior`        | Comportamiento del quiz: `PENDING`, `FAILED`, `PASSED`, `AUTO_PASS` | No        | `AUTO_PASS`           |
-| `auto-pass-seconds`    | Segundos antes de auto-aprobar (solo con `AUTO_PASS`)               | No        | `30`                  |
-| `polling-interval`     | Intervalo de polling (segundos)                                     | No        | `10`                  |
-| `max-polling-attempts` | Máximo de intentos de polling                                       | No        | `30`                  |
+## 📋 Inputs
 
-#### Outputs
+| Input          | Descripción              | Requerido | Default               |
+| -------------- | ------------------------ | --------- | --------------------- |
+| `api-key`      | API Key de autenticación | Sí        | -                     |
+| `github-token` | Token para comentarios   | Sí        | `${{ github.token }}` |
 
-| Output        | Descripción                                  |
-| ------------- | -------------------------------------------- |
-| `quiz-url`    | URL del cuestionario generado                |
-| `quiz-status` | Estado final (`PASSED`, `FAILED`, `PENDING`) |
+## 🎭 Estado Mock (Desarrollo)
 
-## 🏗️ Desarrollo
+**⚠️ IMPORTANTE:** Esta versión usa un backend **completamente mockeado**. No se realizan llamadas HTTP reales.
 
-### Instalación
+### Escenarios simulados por API Key:
+
+- `test-invalid` o `invalid-key` → ❌ Error de autenticación
+- `expired-key` → ❌ Key expirada
+- Cualquier key con `valid` o `prod` → ✅ Trivia completada
+- Cualquier otra key → ⏸️ Trivia pendiente
+
+### Ejemplo de prueba:
+
+```yaml
+# Probar escenario de éxito
+with:
+  api-key: 'valid-test-key'
+
+# Probar escenario de error
+with:
+  api-key: 'invalid-key'
+
+# Probar escenario pendiente
+with:
+  api-key: 'any-other-key'
+```
+
+## 🔄 Migración a Producción
+
+Para habilitar las llamadas reales al backend:
+
+1. Abre [`src/backendClient.ts`](src/backendClient.ts)
+2. Busca la sección `// PROD: Implementación real`
+3. Descomenta el código de producción
+4. Comenta o elimina el código marcado con `// MOCK:`
+5. Actualiza `BACKEND_URL` con tu endpoint real
+6. Recompila: `npm run build`
+
+## 🛠️ Desarrollo
+
+### Requisitos
+
+- Node.js 20+
+- npm
+
+### Instalación local
 
 ```bash
 npm install
@@ -105,174 +112,80 @@ npm install
 npm run build
 ```
 
-Esto compila TypeScript y empaqueta todo en `dist/index.js` usando `@vercel/ncc`.
+### Formato
 
-### Comportamientos Mock Disponibles
-
-La action funciona completamente sin backend. Puedes configurar diferentes comportamientos:
-
-#### `AUTO_PASS` (default)
-
-Auto-aprueba el quiz después de N segundos (configurable con `auto-pass-seconds`):
-
-```yaml
-with:
-  mock-behavior: "AUTO_PASS"
-  auto-pass-seconds: "30" # Aprueba después de 30 segundos
+```bash
+npm run format
 ```
 
-#### `PASSED`
+### Lint
 
-Aprueba inmediatamente (útil para testing):
-
-```yaml
-with:
-  mock-behavior: "PASSED"
+```bash
+npm run lint
 ```
 
-#### `FAILED`
-
-Rechaza inmediatamente:
-
-```yaml
-with:
-  mock-behavior: "FAILED"
-```
-
-#### `PENDING`
-
-Permanece pendiente indefinidamente (fallará por timeout):
-
-```yaml
-with:
-  mock-behavior: "PENDING"
-  max-polling-attempts: "10" # Fallará después de 10 intentos
-```
-
-### Estructura del proyecto
+## 📁 Estructura del Proyecto
 
 ```
-action/
+.
+├── action.yml                 # Definición de la Action
 ├── src/
-│   ├── index.ts              # Entry point
-│   ├── main.ts               # Lógica principal
-│   ├── pr-metadata.ts        # Extracción de metadata del PR
-│   ├── backend-client.ts     # Cliente mock (sin backend real)
-│   ├── comment-handler.ts    # Publicar comentarios en PR
-│   └── quiz-poller.ts        # Polling del estado del quiz
-├── dist/                     # Código compilado (generado)
-├── action.yml                # Metadata de la action
+│   ├── index.ts              # Punto de entrada principal
+│   └── backendClient.ts      # Cliente backend (MOCK)
+├── dist/
+│   └── index.js              # Código compilado (generado)
+├── .github/
+│   └── workflows/
+│       └── pr-check.yml      # Workflow de ejemplo
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
 
-## 🔌 Migración a Backend Real (Futuro)
+## 🔍 Funcionamiento
 
-Actualmente la action funciona completamente sin backend usando respuestas mock.
+### Cuando se abre/actualiza un PR:
 
-Para integrar con un backend real que genere preguntas con IA:
+1. La Action lee la API Key desde los inputs
+2. Consulta el backend (mock) para verificar el estado
+3. **Si la trivia NO está completa:**
+   - ❌ Falla el workflow
+   - 💬 Deja un comentario con la URL de la trivia
+   - 🚫 Bloquea el merge del PR
+4. **Si la trivia está completa:**
+   - ✅ Aprueba el workflow
+   - Permite continuar con el merge
 
-1. **Modificar `src/backend-client.ts`** para hacer llamadas HTTP reales
-2. **Implementar endpoints** en tu backend:
-   - `POST /generate-quiz` - Recibe metadata del PR, genera preguntas
-   - `GET /quiz-status/:id` - Retorna estado actual del quiz
-3. **Implementar frontend** para mostrar el cuestionario en la URL generada
-4. **Actualizar inputs** del `action.yml` para aceptar URL de backend real
+### Detección de duplicados:
 
-Ver `mock-backend/` para un ejemplo de referencia de cómo debería ser la estructura de respuestas.
+Los comentarios incluyen un marker invisible para evitar spam. Si ya existe un comentario de la Action, se actualiza en lugar de crear uno nuevo.
 
-### `POST /generate-quiz`
+## 🧪 Testing
 
-**Request:**
+Para probar la Action localmente sin hacer PRs reales:
 
-```json
-{
-  "repoOwner": "string",
-  "repoName": "string",
-  "prNumber": number,
-  "title": "string",
-  "description": "string",
-  "commitSHA": "string",
-  "baseBranch": "string",
-  "headBranch": "string",
-  "author": "string",
-  "filesChanged": [
-    {
-      "filename": "string",
-      "status": "added|modified|removed|renamed",
-      "additions": number,
-      "deletions": number,
-      "changes": number,
-      "patch": "string"
-    }
-  ]
-}
+```bash
+# 1. Build
+npm run build
+
+# 2. Configurar variables de entorno
+export INPUT_API-KEY='valid-test-key'
+export INPUT_GITHUB-TOKEN='ghp_...'
+export GITHUB_REPOSITORY='owner/repo'
+# ... (más variables según sea necesario)
+
+# 3. Ejecutar
+node dist/index.js
 ```
-
-Ver `mock-backend/` para un ejemplo de referencia de cómo debería ser la estructura de respuestas.
-
-## 🔒 Seguridad
-
-- El `github-token` debe tener permisos de escritura en PRs
-- No almacenar secretos en el código
-- Si migras a backend real, usar HTTPS y validar origen de requests
-
-## 📝 Flujo Completo
-
-1. Se abre/actualiza un Pull Request
-2. La action se ejecuta automáticamente
-3. Obtiene metadata del PR (archivos, commits, etc.)
-4. **Genera quiz mock localmente** (sin backend externo)
-5. Publica comentario en el PR con el link al cuestionario
-6. Hace polling del estado cada X segundos
-7. Según configuración:
-   - **AUTO_PASS**: Aprueba después de N segundos → Action pasa ✅
-   - **PASSED**: Aprueba inmediatamente → Action pasa ✅
-   - **FAILED**: Rechaza inmediatamente → Action falla ❌
-   - **PENDING**: Permanece pendiente → Action falla por timeout ❌
-8. El PR permanece bloqueado hasta que la action pase
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Abre un Pull Request
 
 ## 📄 Licencia
 
 MIT
 
-## 🆘 Troubleshooting
+## 🤝 Contribuir
 
-### La action falla con "Esta action solo funciona en eventos de pull_request"
+¿Encontraste un bug? ¿Tienes una sugerencia? Abre un issue o envía un PR.
 
-Asegúrate de que el workflow se ejecuta en eventos de PR:
+---
 
-```yaml
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-```
-
-### El quiz nunca se aprueba
-
-Si usas `mock-behavior: "PENDING"`, el quiz nunca se aprobará. Cambia a:
-
-```yaml
-with:
-  mock-behavior: "AUTO_PASS"
-  auto-pass-seconds: "30"
-```
-
-### El polling termina muy rápido
-
-Aumenta `max-polling-attempts` o reduce `polling-interval`:
-
-```yaml
-with:
-  polling-interval: "5"
-  max-polling-attempts: "60" # 5 minutos total
-```
+**Nota:** Esta es una versión MVP con backend mockeado. Diseñada como base arquitectónica para una plataforma comercial de PR validation.

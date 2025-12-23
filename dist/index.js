@@ -1,4 +1,4 @@
-/******/ (() => { // webpackBootstrap
+require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 4914:
@@ -29922,175 +29922,136 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 67:
+/***/ 7020:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BackendClient = void 0;
 /**
- * Cliente mock que simula respuestas del backend
- * No requiere backend real, todas las respuestas son generadas localmente
+ * Cliente para comunicación con el backend de trivia.
+ *
+ * ESTADO ACTUAL: MOCK
+ * -----------------
+ * Esta implementación NO realiza llamadas HTTP reales.
+ * Todas las respuestas están simuladas para permitir desarrollo y testing.
+ *
+ * MIGRACIÓN A PRODUCCIÓN:
+ * ----------------------
+ * Para habilitar la integración real:
+ * 1. Descomentar las líneas marcadas con "// PROD:"
+ * 2. Eliminar o comentar las líneas marcadas con "// MOCK:"
+ * 3. Asegurarse de que BACKEND_URL apunte al endpoint correcto
+ * 4. Verificar el formato de requests/responses con el backend real
  */
-class BackendClient {
-    constructor(mockBehavior = "AUTO_PASS", autoPassAfterSeconds = 30) {
-        this.quizzes = new Map();
-        this.quizCounter = 1;
-        this.mockBehavior = mockBehavior;
-        this.autoPassAfterSeconds = autoPassAfterSeconds;
-    }
-    /**
-     * Genera un nuevo cuestionario simulado basado en la metadata del PR
-     * @param prMetadata Metadata del Pull Request
-     * @returns Quiz ID y URL del cuestionario mock
-     */
-    async generateQuiz(prMetadata) {
-        // Generar ID único para el quiz
-        const quizId = `quiz-${Date.now()}-${this.quizCounter++}`;
-        const quizUrl = `https://mock-frontend.dev/quiz/${quizId}`;
-        // Crear entrada en el storage mock con estado inicial
-        const initialStatus = {
-            status: this.mockBehavior === "AUTO_PASS" ? "PENDING" : this.mockBehavior,
-            attempts: 0,
-            lastAttemptAt: undefined,
-        };
-        // Guardar quiz con timestamp de creación
-        this.quizzes.set(quizId, {
-            ...initialStatus,
-            lastAttemptAt: new Date().toISOString(),
-        });
-        // Simular pequeña latencia de red
-        await this.sleep(100);
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.checkTriviaStatus = checkTriviaStatus;
+exports.isAuthError = isAuthError;
+/**
+ * URL del backend de trivia.
+ * Esta URL NO es configurable por el usuario final.
+ * Solo debe modificarse en este archivo para apuntar al backend real.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const BACKEND_URL = 'https://api.trivia-validator.example.com';
+/**
+ * Consulta el estado de la trivia para un PR específico.
+ *
+ * @param params - Parámetros de la consulta
+ * @returns Estado de la trivia o error de autenticación
+ * @throws Error si ocurre un problema de red o servidor
+ */
+async function checkTriviaStatus(params) {
+    const { repository, prNumber, author, apiKey } = params;
+    // MOCK: Simulación de diferentes escenarios
+    // ==========================================
+    // En producción, reemplazar toda esta sección por una llamada HTTP real
+    // Simulación de delay de red
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Validación de API Key (mock)
+    if (!apiKey || apiKey.trim() === '') {
         return {
-            quizId,
-            quizUrl,
+            error: 'invalid_api_key',
+            message: 'API Key no proporcionada o vacía',
         };
     }
-    /**
-     * Consulta el estado actual de un cuestionario simulado
-     * @param quizId ID del cuestionario
-     * @returns Estado actual del quiz
-     */
-    async getQuizStatus(quizId) {
-        const quiz = this.quizzes.get(quizId);
-        if (!quiz) {
-            throw new Error(`Quiz no encontrado: ${quizId}`);
-        }
-        // Simular auto-aprobación después de cierto tiempo
-        if (this.mockBehavior === "AUTO_PASS" && quiz.status === "PENDING") {
-            const createdAt = new Date(quiz.lastAttemptAt || Date.now());
-            const elapsed = (Date.now() - createdAt.getTime()) / 1000;
-            if (elapsed >= this.autoPassAfterSeconds) {
-                quiz.status = "PASSED";
-                quiz.attempts = 1;
-                quiz.lastAttemptAt = new Date().toISOString();
-            }
-        }
-        // Simular pequeña latencia de red
-        await this.sleep(100);
-        return { ...quiz };
-    }
-    /**
-     * Helper para simular latencia de red
-     */
-    sleep(ms) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-}
-exports.BackendClient = BackendClient;
-
-
-/***/ }),
-
-/***/ 8799:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
+    // Simular diferentes escenarios basados en la API Key
+    if (apiKey === 'invalid-key' || apiKey === 'test-invalid') {
+        return {
+            error: 'invalid_api_key',
+            message: 'API Key inválida. Por favor verifica tu licencia en https://trivia-validator.example.com',
         };
-        return ownKeys(o);
+    }
+    if (apiKey === 'expired-key') {
+        return {
+            error: 'expired_api_key',
+            message: 'Tu API Key ha expirado. Renueva tu suscripción para continuar.',
+        };
+    }
+    // Simular trivia completada (cuando la key contiene "valid")
+    if (apiKey.includes('valid') || apiKey.includes('prod')) {
+        return {
+            completed: true,
+            message: 'Trivia completada exitosamente',
+            metadata: {
+                completedAt: new Date().toISOString(),
+                score: 85,
+                attempts: 2,
+            },
+        };
+    }
+    // Por defecto: trivia pendiente
+    return {
+        completed: false,
+        message: 'Trivia pendiente de completar',
+        triviaUrl: `https://trivia-validator.example.com/complete?repo=${encodeURIComponent(repository)}&pr=${prNumber}&user=${encodeURIComponent(author)}`,
     };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postCommentToPR = postCommentToPR;
-const github = __importStar(__nccwpck_require__(3228));
-/**
- * Publica un comentario en el Pull Request con el link al cuestionario
- * @param githubToken Token de autenticación de GitHub
- * @param prNumber Número del Pull Request
- * @param quizResponse Respuesta del backend con quiz ID y URL
- */
-async function postCommentToPR(githubToken, prNumber, quizResponse) {
-    const octokit = github.getOctokit(githubToken);
-    const context = github.context;
-    const commentBody = generateCommentBody(quizResponse);
-    await octokit.rest.issues.createComment({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        issue_number: prNumber,
-        body: commentBody,
+    // PROD: Implementación real (comentada)
+    // ======================================
+    /*
+    const url = `${BACKEND_URL}/trivia/status`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Client-Version': '1.0.0',
+      },
+      body: JSON.stringify({
+        repository,
+        pr_number: prNumber,
+        author,
+      }),
     });
+  
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        const errorData = await response.json();
+        return {
+          error: 'invalid_api_key',
+          message: errorData.message || 'Credenciales inválidas',
+        };
+      }
+      
+      if (response.status === 429) {
+        return {
+          error: 'rate_limited',
+          message: 'Demasiadas solicitudes. Intenta nuevamente en unos minutos.',
+        };
+      }
+  
+      throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+    }
+  
+    const data = await response.json();
+    return data;
+    */
 }
 /**
- * Genera el cuerpo del comentario en formato Markdown
- * @param quizResponse Respuesta del backend con quiz ID y URL
- * @returns String con el comentario formateado
+ * Verifica si una respuesta es un error de autenticación
  */
-function generateCommentBody(quizResponse) {
-    return `## 📋 Cuestionario de Comprensión de Código
-
-Este Pull Request requiere que **al menos un desarrollador** complete un cuestionario para verificar que el código fue revisado correctamente.
-
-### 🎯 Instrucciones
-
-1. Haz clic en el siguiente enlace para acceder al cuestionario
-2. Lee cuidadosamente el código del PR
-3. Responde las preguntas basándote en los cambios realizados
-4. Puedes fallar y reintentar las veces que necesites
-
-### 🔗 Acceder al Cuestionario
-
-**[👉 Completar Cuestionario](${quizResponse.quizUrl})**
-
-### ℹ️ Información
-
-- **Quiz ID:** \`${quizResponse.quizId}\`
-- El PR permanecerá bloqueado hasta que el cuestionario sea aprobado
-- Cualquier desarrollador con permisos para mergear puede responder
-
----
-
-*Este comentario fue generado automáticamente por PR Quiz Checker Action*`;
+function isAuthError(response) {
+    return 'error' in response;
 }
 
 
@@ -30136,299 +30097,192 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
-const main_1 = __nccwpck_require__(1730);
-// Punto de entrada principal de la action
-(0, main_1.run)().catch((error) => {
-    core.setFailed(error.message);
-    process.exit(1);
-});
-
-
-/***/ }),
-
-/***/ 1730:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = run;
-const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
-const pr_metadata_1 = __nccwpck_require__(3303);
-const backend_client_1 = __nccwpck_require__(67);
-const comment_handler_1 = __nccwpck_require__(8799);
-const quiz_poller_1 = __nccwpck_require__(4101);
+const backendClient_1 = __nccwpck_require__(7020);
 /**
- * Función principal de la GitHub Action
- * Orquesta todo el flujo: obtener metadata, generar quiz, comentar en PR, y polling
+ * Identificador único para detectar comentarios de esta Action.
+ * Se usa como marker oculto en el comentario para evitar duplicados.
  */
-async function run() {
+const COMMENT_MARKER = '<!-- pr-trivia-checker-comment -->';
+/**
+ * Genera el cuerpo del comentario cuando la trivia está pendiente.
+ */
+function generatePendingComment(triviaUrl) {
+    return `${COMMENT_MARKER}
+## ⏸️ Pull Request en espera
+
+Este PR requiere completar una validación externa antes de poder ser mergeado.
+
+### 📝 ¿Qué necesito hacer?
+
+Por favor, completa la trivia de validación haciendo clic en el siguiente enlace:
+
+**[➡️ Completar Trivia](${triviaUrl})**
+
+Una vez completada la trivia, vuelve a ejecutar esta Action (puedes hacer un push vacío o re-ejecutar el workflow manualmente).
+
+---
+*Esta validación es requerida para todos los Pull Requests en este repositorio.*`;
+}
+/**
+ * Genera el cuerpo del comentario cuando hay un error de autenticación.
+ */
+function generateAuthErrorComment(errorMessage) {
+    return `${COMMENT_MARKER}
+## ❌ Error de autenticación
+
+Hubo un problema al verificar la API Key configurada:
+
+**${errorMessage}**
+
+### 🔧 ¿Cómo resolverlo?
+
+1. Verifica que la API Key esté correctamente configurada en el workflow
+2. Asegúrate de que la key no haya expirado
+3. Contacta al administrador si el problema persiste
+
+---
+*Esta Action requiere una API Key válida para funcionar correctamente.*`;
+}
+/**
+ * Busca un comentario existente de esta Action en el PR.
+ *
+ * @param octokit - Cliente de GitHub
+ * @param owner - Owner del repositorio
+ * @param repo - Nombre del repositorio
+ * @param issueNumber - Número del PR
+ * @returns ID del comentario si existe, null si no
+ */
+async function findExistingComment(octokit, owner, repo, issueNumber) {
     try {
-        core.info("🚀 Iniciando PR Quiz Checker Action...");
-        // 1. Validar que estamos en un contexto de Pull Request
-        const context = github.context;
-        if (!context.payload.pull_request) {
-            throw new Error("Esta action solo funciona en eventos de pull_request");
-        }
-        // 2. Obtener inputs
-        const githubToken = core.getInput("github-token", { required: true });
-        const mockBehavior = (core.getInput("mock-behavior", { required: false }) || "AUTO_PASS");
-        const autoPassSeconds = parseInt(core.getInput("auto-pass-seconds", { required: false }) || "30", 10);
-        const pollingInterval = parseInt(core.getInput("polling-interval", { required: false }) || "10", 10);
-        const maxPollingAttempts = parseInt(core.getInput("max-polling-attempts", { required: false }) || "30", 10);
-        core.info(`📊 Configuración:`);
-        core.info(`   Mock behavior: ${mockBehavior}`);
-        core.info(`   Auto-pass after: ${autoPassSeconds}s`);
-        core.info(`   Polling interval: ${pollingInterval}s`);
-        core.info(`   Max polling attempts: ${maxPollingAttempts}`);
-        // 3. Obtener metadata del PR
-        core.info("📝 Obteniendo metadata del Pull Request...");
-        const prMetadata = await (0, pr_metadata_1.getPRMetadata)(githubToken);
-        core.info(`   PR #${prMetadata.prNumber}: ${prMetadata.title}`);
-        core.info(`   Archivos modificados: ${prMetadata.filesChanged.length}`);
-        // 4. Generar quiz mock (sin backend real)
-        core.info("🎯 Generando cuestionario mock...");
-        const backendClient = new backend_client_1.BackendClient(mockBehavior, autoPassSeconds);
-        const quizResponse = await backendClient.generateQuiz(prMetadata);
-        core.info(`   Quiz ID: ${quizResponse.quizId}`);
-        core.info(`   Quiz URL: ${quizResponse.quizUrl}`);
-        // 5. Publicar comentario en el PR con el link al quiz
-        core.info("💬 Publicando comentario en el PR...");
-        await (0, comment_handler_1.postCommentToPR)(githubToken, prMetadata.prNumber, quizResponse);
-        core.info("   Comentario publicado exitosamente");
-        // 6. Polling del estado del quiz
-        core.info("⏳ Iniciando polling del estado del cuestionario...");
-        const finalStatus = await (0, quiz_poller_1.pollQuizStatus)(backendClient, quizResponse.quizId, pollingInterval, maxPollingAttempts);
-        // 7. Evaluar resultado final
-        core.setOutput("quiz-url", quizResponse.quizUrl);
-        core.setOutput("quiz-status", finalStatus.status);
-        if (finalStatus.status === "PASSED") {
-            core.info("✅ Cuestionario completado exitosamente");
-            core.info(`   Intentos totales: ${finalStatus.attempts}`);
-        }
-        else if (finalStatus.status === "FAILED") {
-            core.setFailed("❌ El cuestionario fue completado pero no fue aprobado. El desarrollador puede reintentarlo.");
+        const { data: comments } = await octokit.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number: issueNumber,
+        });
+        const existingComment = comments.find((comment) => comment.body?.includes(COMMENT_MARKER));
+        return existingComment?.id || null;
+    }
+    catch (error) {
+        core.warning(`No se pudo buscar comentarios existentes: ${error instanceof Error ? error.message : String(error)}`);
+        return null;
+    }
+}
+/**
+ * Publica o actualiza un comentario en el PR.
+ *
+ * @param octokit - Cliente de GitHub
+ * @param owner - Owner del repositorio
+ * @param repo - Nombre del repositorio
+ * @param issueNumber - Número del PR
+ * @param body - Contenido del comentario
+ */
+async function postOrUpdateComment(octokit, owner, repo, issueNumber, body) {
+    const existingCommentId = await findExistingComment(octokit, owner, repo, issueNumber);
+    try {
+        if (existingCommentId) {
+            // Actualizar comentario existente
+            await octokit.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingCommentId,
+                body,
+            });
+            core.info(`✏️ Comentario actualizado (ID: ${existingCommentId})`);
         }
         else {
-            core.setFailed("⏰ Timeout: El cuestionario no fue completado en el tiempo esperado. El PR permanece bloqueado.");
+            // Crear nuevo comentario
+            const { data } = await octokit.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body,
+            });
+            core.info(`💬 Nuevo comentario creado (ID: ${data.id})`);
         }
     }
     catch (error) {
-        if (error instanceof Error) {
-            core.setFailed(`Error en PR Quiz Checker: ${error.message}`);
-        }
-        else {
-            core.setFailed("Error desconocido en PR Quiz Checker");
-        }
+        core.error(`Error al publicar comentario: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
     }
 }
-
-
-/***/ }),
-
-/***/ 3303:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
+/**
+ * Función principal de la GitHub Action.
+ */
+async function run() {
+    try {
+        // 1. Leer inputs
+        const apiKey = core.getInput('api-key', { required: true });
+        const githubToken = core.getInput('github-token', { required: true });
+        core.info('🚀 Iniciando PR Trivia Checker...');
+        // 2. Obtener contexto del PR
+        const context = github.context;
+        if (!context.payload.pull_request) {
+            core.setFailed('Esta Action solo puede ejecutarse en eventos de pull_request');
+            return;
+        }
+        const prNumber = context.payload.pull_request.number;
+        const author = context.payload.pull_request.user.login;
+        const repository = context.payload.repository?.full_name;
+        if (!repository) {
+            core.setFailed('No se pudo obtener el nombre del repositorio');
+            return;
+        }
+        core.info(`📋 PR #${prNumber} por @${author} en ${repository}`);
+        // 3. Preparar parámetros para el backend
+        const params = {
+            repository,
+            prNumber,
+            author,
+            apiKey,
         };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getPRMetadata = getPRMetadata;
-const github = __importStar(__nccwpck_require__(3228));
-/**
- * Obtiene toda la metadata relevante del Pull Request actual
- * @param githubToken Token de autenticación de GitHub
- * @returns Objeto con toda la información del PR
- */
-async function getPRMetadata(githubToken) {
-    const octokit = github.getOctokit(githubToken);
-    const context = github.context;
-    const pr = context.payload.pull_request;
-    // Obtener lista de archivos modificados
-    const { data: files } = await octokit.rest.pulls.listFiles({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        pull_number: pr.number,
-    });
-    const filesChanged = files.map((file) => ({
-        filename: file.filename,
-        status: file.status,
-        additions: file.additions,
-        deletions: file.deletions,
-        changes: file.changes,
-        patch: file.patch,
-    }));
-    return {
-        repoOwner: context.repo.owner,
-        repoName: context.repo.repo,
-        prNumber: pr.number,
-        title: pr.title,
-        description: pr.body || "",
-        commitSHA: pr.head.sha,
-        baseBranch: pr.base.ref,
-        headBranch: pr.head.ref,
-        author: pr.user.login,
-        filesChanged,
-    };
-}
-
-
-/***/ }),
-
-/***/ 4101:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
+        // 4. Consultar estado de la trivia
+        core.info('🔍 Consultando estado de la trivia...');
+        const response = await (0, backendClient_1.checkTriviaStatus)(params);
+        // 5. Crear cliente de GitHub para comentarios
+        const octokit = github.getOctokit(githubToken);
+        const [owner, repo] = repository.split('/');
+        // 6. Manejar errores de autenticación
+        if ((0, backendClient_1.isAuthError)(response)) {
+            core.error(`❌ Error de autenticación: ${response.message}`);
+            const errorComment = generateAuthErrorComment(response.message);
+            await postOrUpdateComment(octokit, owner, repo, prNumber, errorComment);
+            core.setFailed(`Error de autenticación: ${response.message}`);
+            return;
+        }
+        // 7. Manejar estado de la trivia
+        if (!response.completed) {
+            // Trivia NO completada - bloquear PR
+            core.warning('⏸️ Trivia pendiente de completar');
+            const triviaUrl = response.triviaUrl ||
+                'https://trivia-validator.example.com/complete';
+            const pendingComment = generatePendingComment(triviaUrl);
+            await postOrUpdateComment(octokit, owner, repo, prNumber, pendingComment);
+            core.setFailed(`La trivia debe ser completada antes de mergear este PR. URL: ${triviaUrl}`);
+            return;
+        }
+        // 8. Trivia completada - éxito
+        core.info('✅ Trivia completada exitosamente!');
+        core.info(`   Mensaje: ${response.message}`);
+        if (response.metadata) {
+            core.info(`   Completada: ${response.metadata.completedAt || 'N/A'}`);
+            core.info(`   Score: ${response.metadata.score || 'N/A'}`);
+        }
+        // No dejamos comentario en caso exitoso (según requerimientos)
+        core.info('🎉 PR aprobado - puede continuar con el merge');
     }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pollQuizStatus = pollQuizStatus;
-const core = __importStar(__nccwpck_require__(7484));
-/**
- * Realiza polling del estado del cuestionario hasta que sea completado o se alcance el timeout
- * @param backendClient Cliente del backend
- * @param quizId ID del cuestionario
- * @param intervalSeconds Intervalo entre consultas en segundos
- * @param maxAttempts Número máximo de intentos de polling
- * @returns Estado final del cuestionario
- */
-async function pollQuizStatus(backendClient, quizId, intervalSeconds, maxAttempts) {
-    let attempts = 0;
-    while (attempts < maxAttempts) {
-        attempts++;
-        core.info(`   Intento ${attempts}/${maxAttempts} - Consultando estado del quiz...`);
-        const status = await backendClient.getQuizStatus(quizId);
-        core.info(`   Estado: ${status.status} | Intentos del usuario: ${status.attempts}`);
-        // Si el quiz fue aprobado, retornamos inmediatamente
-        if (status.status === "PASSED") {
-            core.info(`   ✅ Quiz aprobado en el intento ${status.attempts}`);
-            return status;
+    catch (error) {
+        // Manejo de errores inesperados
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        core.error(`💥 Error inesperado: ${errorMessage}`);
+        if (error instanceof Error && error.stack) {
+            core.debug(error.stack);
         }
-        // Si el quiz falló (pero puede reintentarse), continuamos polling
-        if (status.status === "FAILED") {
-            core.info(`   ⚠️  Quiz fallido, esperando reintento del usuario...`);
-        }
-        // Si aún está pendiente, informamos
-        if (status.status === "PENDING") {
-            core.info(`   ⏳ Quiz aún no iniciado o en progreso...`);
-        }
-        // Si no hemos llegado al límite, esperamos antes del próximo intento
-        if (attempts < maxAttempts) {
-            core.info(`   Esperando ${intervalSeconds} segundos antes del próximo intento...`);
-            await sleep(intervalSeconds * 1000);
-        }
+        core.setFailed(`Error al ejecutar la Action: ${errorMessage}`);
     }
-    // Si llegamos aquí, alcanzamos el máximo de intentos sin aprobación
-    core.warning(`Timeout alcanzado después de ${maxAttempts} intentos (${maxAttempts * intervalSeconds}s)`);
-    // Hacemos una última consulta para retornar el estado final
-    return await backendClient.getQuizStatus(quizId);
 }
-/**
- * Función helper para pausar la ejecución
- * @param ms Milisegundos a esperar
- */
-function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// Ejecutar la Action
+run();
 
 
 /***/ }),
@@ -32353,3 +32207,4 @@ module.exports = parseParams
 /******/ 	
 /******/ })()
 ;
+//# sourceMappingURL=index.js.map

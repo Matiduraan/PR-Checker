@@ -1,0 +1,32 @@
+name: PR Trivia Check
+
+# Esta Action se ejecuta cuando:
+# 1. Se abre un nuevo PR
+# 2. Se reabre un PR cerrado
+# 3. Se hace push a un PR existente
+# 4. Manualmente desde la UI de GitHub (para debugging)
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  check-trivia:
+    runs-on: ubuntu-latest
+    name: Verificar Trivia de Validación
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ejecutar PR Trivia Checker
+        uses: ./ # Si estás usando la Action local, usa './'
+        # Para usar desde el marketplace:
+        # uses: your-org/pr-trivia-checker@v1
+        with:
+          # API Key - DEBE venir de un secret
+          # Obtén tu API Key en: https://trivia-validator.example.com/dashboard
+          api-key: ${{ secrets.TRIVIA_API_KEY }}
+
+          # Token de GitHub - usa el automático
+          github-token: ${{ secrets.GITHUB_TOKEN }}

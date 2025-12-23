@@ -1,43 +1,19 @@
-name: "PR Quiz Checker"
-description: "Bloquea el merge del PR hasta que al menos un desarrollador complete exitosamente un cuestionario de comprensión del código"
-author: "Your Team"
-
+name: 'PR Trivia Checker'
+description: 'Bloquea Pull Requests hasta que el autor complete una trivia de validación externa'
+author: 'Your Name'
 branding:
-  icon: "check-circle"
-  color: "green"
+  icon: 'check-circle'
+  color: 'green'
 
 inputs:
+  api-key:
+    description: 'API Key de autenticación proporcionada por el servicio de trivia'
+    required: true
   github-token:
-    description: "GitHub token para interactuar con el PR"
+    description: 'Token de GitHub para crear comentarios (usa secrets.GITHUB_TOKEN)'
     required: true
     default: ${{ github.token }}
 
-  mock-behavior:
-    description: "Comportamiento del quiz mock: PENDING, FAILED, PASSED, AUTO_PASS"
-    required: false
-    default: "AUTO_PASS"
-
-  auto-pass-seconds:
-    description: "Segundos antes de auto-aprobar el quiz (solo si mock-behavior es AUTO_PASS)"
-    required: false
-    default: "30"
-
-  polling-interval:
-    description: "Intervalo de polling en segundos para verificar el estado del quiz"
-    required: false
-    default: "10"
-
-  max-polling-attempts:
-    description: "Máximo número de intentos de polling antes de fallar"
-    required: false
-    default: "30"
-
-outputs:
-  quiz-url:
-    description: "URL del cuestionario generado"
-  quiz-status:
-    description: "Estado final del cuestionario (PASSED, FAILED, PENDING)"
-
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: 'node20'
+  main: 'dist/index.js'
